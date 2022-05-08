@@ -16,7 +16,28 @@ class TaskItem extends HTMLElement {
         const task = tasks.find((t) => t.id === this.getAttribute('id') && t.text === this.getAttribute('text'));
         if (typeof task !== 'undefined') {
             task.checked = !task.checked;
+
+            // toggle display
+            if (this.style.display === 'none') {
+                this.style.display = 'flex';
+            } else {
+                this.style.display = 'none';
+            }
+
+            // hide focus button when task is complete
+            if (task.checked) {
+                this.shadowRoot.children[0].children[1].style.display = 'none';
+            } else {
+                this.shadowRoot.children[0].children[1].style.display = 'initial';
+            }
+
+            // save to local storage
             localStorage.setItem('tasks', JSON.stringify(tasks));
+
+            // call focus function if task is set to complete during focus
+            if (this.getAttribute('focused') === 'true' && task.checked) {
+                this.focus(null);
+            }
         }
     }
 
@@ -38,7 +59,11 @@ class TaskItem extends HTMLElement {
 
     /** allows user to focus on a task item */
     focus(event) {
-        event.stopPropagation();
+        // for generic focus call
+        if (event) {
+            event.stopPropagation();
+        }
+
         // remove task item from parent
         this.parentNode.removeChild(this);
         const tasks = JSON.parse(localStorage.getItem('tasks'));
@@ -170,11 +195,10 @@ class TaskItem extends HTMLElement {
         :host(:hover) {
             box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
             transition: 0.3s;
+            filter:brightness(125%)
         }
         :host([checked = 'true']) {
             background: #f3606060;
-            text-decoration: line-through;
-            -webkit-text-decoration: line-through;
         }
         :host([checked = 'true']) .check-icon {
             visibility: visible;
