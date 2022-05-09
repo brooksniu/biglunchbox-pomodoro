@@ -1,10 +1,12 @@
 const startButton = document.getElementById('start-btn');
 const timerDisplayDuration = document.getElementById('timer_display_duration');
+const tabLabel = document.getElementById('tab-label');
 const btnSound = new Audio('./icons/btnClick.mp3');
 const alarmSound = new Audio('./icons/alarm.mp3');
 const SECOND = 1000;
 let timer;
 let timerStatus = 'pomo';
+let tabLabelStatus = 'Time to Focus!';
 let breakCounter = 0;
 
 // assign default session lengths to local storage
@@ -30,6 +32,8 @@ function switchMode() {
 
     if (timerStatus === 'pomo' && breakCounter >= 3) {
         timerDisplayDuration.innerHTML = `${longBreakTime}:00`;
+        tabLabelStatus = 'Rest a while!';
+        updateTabLabel(`${longBreakTime}:00`);
         if (pomoButton.getAttribute('class') !== 'toggle') {
             pomoButton.classList.toggle('toggle');
             breakButton.classList.toggle('toggle');
@@ -38,6 +42,8 @@ function switchMode() {
         breakCounter = 0;
     } else if (timerStatus === 'pomo') {
         timerDisplayDuration.innerHTML = `${breakTime}:00`;
+        tabLabelStatus = 'Take a break!';
+        updateTabLabel(`${breakTime}:00`);
         if (pomoButton.getAttribute('class') !== 'toggle') {
             pomoButton.classList.toggle('toggle');
             breakButton.classList.toggle('toggle');
@@ -46,6 +52,8 @@ function switchMode() {
         breakCounter += 1;
     } else {
         timerDisplayDuration.innerHTML = `${pomoTime}:00`;
+        tabLabelStatus = 'Time to Focus!';
+        updateTabLabel(`${pomoTime}:00`);
         if (pomoButton.getAttribute('class') === 'toggle') {
             pomoButton.classList.toggle('toggle');
             breakButton.classList.toggle('toggle');
@@ -88,6 +96,7 @@ async function timerFunction() {
     }
 
     timerDisplayDuration.innerHTML = `${minutes}:${seconds}`;
+    updateTabLabel(`${minutes}:${seconds}`);
 }
 
 /** The function would be call when the click start button and the stop button
@@ -95,6 +104,7 @@ async function timerFunction() {
 */
 async function start() {
     startButton.innerHTML = 'Stop';
+    updateTabLabel(`${pomoTime}:00`);
     timer = setInterval(timerFunction, SECOND);
 }
 
@@ -131,6 +141,15 @@ async function startAndStopButton() {
         start();
     } else {
         stop();
+    }
+}
+
+/** This function is called to update the tab label with the remaining
+ * time, if the Tab Label setting is enabled.
+*/
+function updateTabLabel(tabLabelTime) {
+    if (localStorage.getItem('tab-label') === 'on') {
+        tabLabel.innerHTML = `${tabLabelTime} - ${tabLabelStatus}`;
     }
 }
 

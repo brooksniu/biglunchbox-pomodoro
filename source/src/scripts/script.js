@@ -4,18 +4,23 @@ window.addEventListener('DOMContentLoaded', () => {
     let tasks; // holds list nodes in local storage
     let id; // id counter for task items
     let theme; // UI theme
+    let tabLabel;
     let volume; // default volume -> initialized to 50
     let state; // state -> initialized to 'default'
 
-    if (localStorage.getItem('tasks') === null || localStorage.getItem('id') === null || localStorage.getItem('theme') === null || localStorage.getItem('volume') === null || localStorage.getItem('state') === null) {
+    if (localStorage.getItem('tasks') === null || localStorage.getItem('id') === null
+        || localStorage.getItem('theme') === null || localStorage.getItem('tab-label') === null
+        || localStorage.getItem('volume') === null || localStorage.getItem('state') === null) {
         tasks = [];
         id = 0;
         theme = 'light';
+        tabLabel = 'on';
         volume = 50;
         state = 'default';
         localStorage.setItem('tasks', JSON.stringify(tasks));
         localStorage.setItem('id', `${id}`);
         localStorage.setItem('theme', theme);
+        localStorage.setItem('tab-label', tabLabel);
         localStorage.setItem('volume', `${volume}`);
         localStorage.setItem('state', state);
     } else {

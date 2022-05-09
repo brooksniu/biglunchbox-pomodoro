@@ -50,6 +50,15 @@ class SettingsPopUp extends HTMLElement {
         document.body.classList.toggle('dark-theme');
     }
 
+    toggleTabLabel() {
+        if (localStorage.getItem('tab-label') === 'on') {
+            localStorage.setItem('tab-label', 'off');
+            tabLabel.innerHTML = `Pomodoro Timer`;
+        } else {
+            localStorage.setItem('tab-label', 'on');
+        }
+    }
+
     setVolume() {
         const volume = this.shadowRoot.getElementById('range').value;
         localStorage.setItem('volume', `${volume}`);
@@ -129,6 +138,23 @@ class SettingsPopUp extends HTMLElement {
         slider.setAttribute('class', 'slider');
         // add event listener to toggle dark mode
         slider.addEventListener('click', this.toggleMode.bind(this));
+        // separate div for Tab Label setting
+        const tabLabelDiv = wrapper.appendChild(document.createElement('div'));
+        tabLabelDiv.setAttribute('id', 'tab-label-toggle');
+        const tabLabelTitle = tabLabelDiv.appendChild(document.createElement('h4'));
+        tabLabelTitle.setAttribute('id', 'enable-tab-label');
+        tabLabelTitle.innerHTML = 'Enable Tab Label?';
+        const tabLabelSwitch = tabLabelDiv.appendChild(document.createElement('label'));
+        tabLabelSwitch.setAttribute('class', 'switch');
+        const tabLabelCheckboxInput = tabLabelSwitch.appendChild(document.createElement('input'));
+        tabLabelCheckboxInput.setAttribute('type', 'checkbox');
+        if (localStorage.getItem('tab-label') === 'on') {
+            tabLabelCheckboxInput.checked = 'checked';
+        }
+        const tabLabelSlider = tabLabelSwitch.appendChild(document.createElement('span'));
+        tabLabelSlider.setAttribute('class', 'slider');
+        // add event listener to toggle tab label
+        tabLabelSlider.addEventListener('click', this.toggleTabLabel.bind(this));
         // separate div for volume
         const volumeDiv = wrapper.appendChild(document.createElement('div'));
         volumeDiv.setAttribute('id', 'volume-div');
@@ -176,6 +202,7 @@ class SettingsPopUp extends HTMLElement {
         longBreakLabel.setAttribute('part', 'session-labels');
         longBreakInput.setAttribute('part', 'length-inputs');
         darkModeTitle.setAttribute('part', 'enable-dark-mode');
+        tabLabelTitle.setAttribute('part', 'enable-tab-label');
         volumeTitle.setAttribute('part', 'sound-volume');
         volSpan.setAttribute('part', 'volume-number');
         rangeInput.setAttribute('part', 'range-slider');
@@ -259,6 +286,21 @@ class SettingsPopUp extends HTMLElement {
                 align-items: center;
         }
         #dark-mode {
+                justify-content: space-between;
+                display: flex;
+                width: 85%;
+                margin: 1.5625vw auto 0.78125vw auto;
+                border-bottom: solid 1px #d2d2d2;
+                padding-bottom: 1.5625vw;
+        }
+        #enable-tab-label {
+                color: rgb(85, 85, 85);
+                font-weight: 500;
+                margin: 0;
+                display: flex;
+                align-items: center;
+        }
+        #tab-label-toggle {
                 justify-content: space-between;
                 display: flex;
                 width: 85%;
