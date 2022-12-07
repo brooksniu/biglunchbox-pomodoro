@@ -1,87 +1,995 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Pomodoro Timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="tab-label">Pomodoro Timer</title>
+    
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&display=swap" as="font">
     <link rel="stylesheet" href="styles/index.css">
-    <!-- Below is temporary solution to avoid 404 error on Chrome -->
-    <link rel="shortcut icon" href="#">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="icons/favicon.ico">
+
+    <link rel="prefetch" href="assets/icons-68c6c82c.svg" as="image">
+    <link rel="preload" href="icons/btnClick.mp3" as="audio">
+    <link rel="preload" href="icons/alarm.mp3" as="audio">
+    <link rel="preload" href="scripts/Timer.worker.js" as="worker">
+
+    <script src="scripts/script.js"></script>
+    <script src="scripts/Timer.js" type="module"></script>
+    <script src="scripts/FocusMode.js" type="module"></script>
 </head>
 <body>
+    <script>
+        // Render blocking JS:
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('state') === 'focus') {
+                document.getElementById('task-list').classList.add('state');
+                document.getElementById('pomodoro-timer').classList.add('state');
+                document.getElementById('focus-task').classList.add('state');
+            }
+        });
+    </script>
+<template id="help-popup-template">
+    <style>
+        #accessibility-content li {
+            margin-bottom: 0.390625vw;
+        }
+        #accessibility-content {
+            padding: 0;
+        }
+        #accessibility {
+            font-weight: 500;
+            color: rgb(85, 85, 85);
+        }
+        #features-content li {
+            margin-bottom: 0.390625vw;
+        }
+        #features-content {
+            padding: 0;
+        }
+        #features {
+            font-weight: 500;
+            color: rgb(85, 85, 85);
+        }
+        #how-to-content li {
+            margin-bottom: 0.390625vw;
+        }
+        #how-to-content {
+            padding: 0;
+        }
+        #how-to {
+            font-weight: 500;
+            color: rgb(85, 85, 85);
+        }
+        h4 {
+            color: rgb(85, 85, 85);
+            font-weight: 500;
+            font-size: 25px;
+        }
+
+        #help-container {
+            margin: 0 auto;
+            /* height: 80%; */
+            max-height: 60vh;
+            overflow: auto;
+        }
+        #close-icon {
+            /* width: 15px; */
+            width: 20px;
+            position:absolute;
+            top:20px;
+            right:20px;
+            cursor: pointer;
+            opacity: 0.33;
+            transition: transform .3s ease;
+        }
+        #close-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        #help-popup {
+            box-sizing: border-box;
+            display: none;
+            position: fixed;
+            /* width: 30%; */
+            /* width: 52%; */
+            width: 90%;
+            /* height: 30%; */
+            height: fit-content;
+            /* border-radius: 4px;  */
+            border-radius: 10px;
+            padding: 20px;
+            top:18%;
+            /* left: 34%; */
+            left: 24%;
+            z-index: 999;
+            background-color: whitesmoke;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+            -webkit-animation-name: animatetop;
+            -webkit-animation-duration: 0.3s;
+            animation-name: animatetop;
+            animation-duration: 0.3s;
+            max-width:600px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-height: 80vh;
+        }
+        @-webkit-keyframes animatetop {
+            from {
+                top: -200px;
+                opacity: 0
+            }
+            to {
+                top: 70;
+                opacity: 1
+            }
+        }
+        @keyframes animatetop {
+            from {
+                top: -200px;
+                opacity: 0
+            }
+            to {
+                top: 70;
+                opacity: 1
+            }
+        }
+        #help-popup > h3{
+            font-size: 30px;
+            color: #f36060;
+            border-bottom: solid 1px #d2d2d2;
+            /* padding-bottom: 5px; */
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            width:100%;
+            font-weight: 500;
+            /* margin: 20px auto 10px auto; */
+            margin: 1.5625vw auto 0.78125vw auto;
+        }
+
+        @media(min-width:768px) {
+            #help-popup > h3{
+                font-size: 40px;
+            }
+        }
+
+        ol, ul {
+            margin-left: 20px;
+        }
+
+        ol li{
+            font-size: 18px;
+            margin-left: 10px;
+        }
+
+        ul li{
+            font-size: 18px;
+            margin-left: 10px;
+        }
+    </style>
+    <div id="help-popup" part="popup-wrapper">
+        <img src="assets/icons-68c6c82c.svg#close" id="close-icon" part="close-icon">
+        <h3 part="help-h3">Help</h3>
+        <div id="help-container">
+            <div id="how-to" part="instructions">
+                <h4 part="h4">How to use the Pomodoro Timer</h4>
+                <ol id="how-to-content">
+                    <li>Add tasks using the '+' button</li>
+                    <li>Set pomodoro and break lengths in the setitngs (or use the default values)</li>
+                    <li>Select a task to focus on using the magnifying glass icon</li>
+                    <li>Start the timer and be productive!</li>
+                    <li>Take a break when the alarm rings</li>
+                    <li>Repeat steps 3-5 to satisfaction</li>
+                </ol>
+            </div>
+            <div id="features" part="features">
+                <h4 part="h4">Features</h4>
+                <ul id="features-content">
+                    <li>Dark mode theme for late night work sessions</li>
+                    <li>Audio notifications at end of pomodoro sessions</li>
+                    <li>Customizable pomodoro and break intervals</li>
+                    <li>Ability to focus, mark as completed, and delete tasks</li>
+                    <li>Focus mode to eliminate page distractions and allow for greater focus on current task</li>
+                </ul>
+            </div>
+            <div id="accessibility" part="accessibility">
+                <h4 part="h4">Keyboard Shortcuts</h4>
+                <ul id="accessibility-content">
+                    <li>'h' - Help page pop up</li>
+                    <li>';' - Settings pop up</li>
+                    <li>'r' - Reset pop up</li>
+                    <li>'f' - Focus mode</li>
+                    <li>'a' - Add task</li>
+                    <li>'Space' - Start/stop</li>
+                    <li>'Enter' - Confirm/Add</li>
+                    <li>'Esc' - Cancel/Close</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</template>
+<script src="components/HelpPopUp.js" type="module" async></script>
+<template id="settings-popup-template">
+    <style>
+        h4 {
+            font-size: var(--setting-h4);
+            color: rgb(85, 85, 85);
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        p {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        #volume-number {
+            font-size: var(--setting-h4);
+            width: var(--volume-number-width);
+            font-family: Arial;
+            color: rgb(85, 85, 85);
+            margin-left: var(--volume-number-marigin);
+        }
+        .vol-slider {
+            background-color: #ccc;
+            -webkit-appearance: none;
+            appearance: none;
+            border-radius: 3.90625vw;
+            height:var(--volume-slider-height);
+            width: var(--volume-slider-width);
+            outline: none;
+            cursor: pointer;
+            opacity: 0.7;
+            -webkit-transition: .1s;
+            transition: opacity .1s;
+        }
+        .vol-slider:hover {
+            opacity: 1;
+        }
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            width: var(--vol-slider-thumb-width);
+            height: var(--vol-slider-thumb-height);
+            border-radius: 50%;
+            background: #e6e5e5;
+            box-shadow: 0 0 3px 1px rgba(0,0,0,0.2);
+        }
+        .vol-slider::-moz-range-thumb {
+            cursor: pointer;
+            width: var(--vol-slider-thumb-width);
+            height: var(--vol-slider-thumb-height);
+            border-radius: 50%;
+            background: #e6e5e5;
+            box-shadow: 0 0 3px 1px rgba(0,0,0,0.2);
+        }
+        .slider-div {
+            position: relative;
+            display: inline-flex;
+            vertical-align: middle;
+            align-items: center;
+        }
+        .single-setting {
+            justify-content: space-between;
+            display: flex;
+            margin: 10px auto 0px auto;
+            border-bottom: solid 1px #d2d2d2;
+            padding-bottom: 15px;
+        }
+        .switch {
+            position: relative;
+            display: inline-flex;
+            width: var(--switch-width);
+            height: var(--switch-height);
+        }
+        .switch input[type='checkbox'] { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 2.65625vw;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: var(--slider-height);
+            width: var(--slider-width);
+            left: 1px;
+            bottom: 1px;
+            background-color: white;
+            -webkit-transition: 0.2s;
+            transition: 0.2s;
+            border-radius: 50%;
+        }
+        input[type='checkbox']:checked + .slider {
+            background-color: rgb(163 243 67 / 88%);
+        }
+        input[type='checkbox']:checked + .slider:before {
+            -webkit-transform: translateX(var(--slider-width));
+            -ms-transform: translateX(var(--slider-width));
+            transform: translateX(var(--slider-width));
+        }
+        label {
+            display: block;
+            font-size: var(--setting-number-input);
+            color: rgb(85, 85, 85);
+            font-weight: 500;
+        }
+        input[type='number'] {
+            font-size: var(--setting-number-input);
+            color: rgb(85, 85, 85);
+            border: none;
+            border-radius: 0.3125vw;
+            background-color: rgb(234 234 234);
+            padding: 10%;
+            box-sizing: border-box;
+            width: var(--number-input-width);
+            outline: none;
+        }
+        .button-footer {
+            background-color: rgb(234 234 234);
+            margin: 0;
+            padding: 0 20px 20px 20px;
+            text-align: right;
+            position: absolute;
+            right: 0;
+            left: 0;
+            border-radius: 0 0 10px 10px;
+        }
+        #timer-settings {
+            margin: var(--setting-margin) auto var(--setting-margin) auto;
+        }
+        #close-icon {
+            width: 20px;
+            position:absolute;
+            top:20px;
+            right:20px;
+            cursor: pointer;
+            opacity: 0.33;
+            transition: transform .3s ease;
+        }
+        @media(min-width: 800px) {
+            #close-icon {
+                width:30px;
+            }
+        }
+        #close-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        #settings-confirm-popup {
+            box-sizing: border-box;
+            flex-wrap: wrap;
+            position:fixed;
+            height:fit-content;
+            padding: 20px;
+            border-radius: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            z-index: 999;
+            background-color: whitesmoke;
+            width:90%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            -webkit-animation-name: animatetop; 
+            -webkit-animation-duration: 0.3s;
+            animation-name: animatetop;
+            animation-duration: 0.3s;
+            display:none;
+        }
+        @-webkit-keyframes animatetop {
+            from {top:-200px; opacity:0} 
+            to {top:70; opacity:1}
+        }
+        @keyframes animatetop {
+            from {top:-200px; opacity:0}
+            to {top:70; opacity:1}
+        }
+        #settings-confirm-popup > h3 {
+            font-size: 30px;
+            color: #f36060;
+            border-bottom: solid 1px #d2d2d2;
+            padding-bottom: var(--setting-h3-padding);
+            font-weight: 500;
+            margin: var(--setting-margin) auto var(--setting-margin) auto;
+            margin-bottom: 10px;
+        }
+        .settings-popup-btns {
+            cursor: pointer;
+            border-style: none; 
+            text-align: center;
+            background-color:#f36060;
+            color:#fff;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 20px;
+            font-weight: 500;
+            outline: none;
+            padding: 10px 40px;
+            border-radius: 10px;
+            transition: transform .3s ease;
+        }
+        .warning-message {
+            border-style: none; 
+            color:rgb(85, 85, 85);
+            font-family: 'Quicksand', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            outline: none;
+            margin-top: 10px;
+            padding: var(--setting-margin) var(--setting-margin);
+        }
+
+        @media(min-width:768px) {
+            .warning-message {
+                font-size: 15px;
+            }
+        }
+        .settings-popup-btns:hover {
+            filter: brightness(105%);
+            transform: scale(1.1);
+        }
+        .text {
+            color: rgb(85, 85, 85);
+            margin: 0;
+            font-size: var(--setting-text);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            
+        }
+        .state-div{
+            display: inline-flex;
+            align-items: center;
+        }
+        #sound-options{
+            justify-content: space-around;
+        }
+        #sound-switch {
+            margin-left: var(--setting-margin);
+        }
+        #alarm-switch {
+            margin-left: var(--setting-margin);
+        }
+
+        #session {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+    <!-- Part attributes are set to change the style in a global stylesheet -->
+    <div id="settings-confirm-popup" part="settings-confirm-popup">
+        <img src="assets/icons-68c6c82c.svg#close" id="close-icon" part="close-icon">
+        <h3 part="settings-h3">Settings</h3>
+        <h4 id="timer-settings" part="timer-settings">Session Length (minutes)</h4>
+        <div id="session" class="single-setting">
+            <div class="session-inputs">
+                <label for="pomo" part="session-labels">Pomodoro</label>
+                <input type="number" id="pomo-length-input" min="1" max="60" part="length-inputs">
+            </div>
+            <div class="session-inputs">
+                <label for="short-break" part="session-labels">Short Break</label>
+                <input type="number" id="short-break-input" min="1" max="60" part="length-inputs">
+            </div>
+            <div class="session-inputs">
+                <label for="long-break" part="session-labels">Long Break</label>
+                <input type="number" id="long-break-input" min="1" max="60" part="length-inputs">
+            </div>
+        </div>
+        <div id="dark-mode" class="single-setting">
+            <h4 id="enable-dark-mode" part="enable-dark-mode">Enable Dark Mode?</h4>
+            <label class="switch">
+                <input type="checkbox">
+                <span id="mode-switch-slider" class="slider"></span>
+            </label>
+        </div>
+        <div id="tab-label-switch" class="single-setting">
+            <h4 id="enable-tab-label" part="enable-tab-label">Enable Tab Label?</h4>
+            <label class="switch">
+                <input type="checkbox">
+                <span id="tab-label-switch-slider" class="slider"></span>
+            </label>
+        </div>
+        <div id="volume-div" class="single-setting">
+            <h4 id="sound-volume" part="sound-volume">Global Audio Volume</h4>
+            <p><span id="volume-number" part="volume-number"></span></p>
+            <div class="slider-div">
+                <input type="range" min="0" max="100" class="vol-slider" id="range" part="range-slider">
+            </div>
+        </div>
+        <div class="single-setting" id="sound-options">
+            <div class="state-div">
+                <h4 id="enable-disable-clicksound" class="text" part="enable-disable-clicksound">&nbsp&nbspClick<br/>Sound</h4>
+                <label id="sound-switch" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="state-div">
+                <h4 id="enable-disable-alarmsound" class="text" part="enable-disable-alarmsound">Alarm<br/>Sound</h4>
+                <label id="alarm-switch" class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+        </div>
+        <div class="button-footer" part="btn-footer">
+            <p class = "warning-message" style="text-align:left" part="volume-number">WARNING: Any changes to settings will reset the timer if running!</p>
+            <button class="settings-popup-btns" id="confirm-settings-btn" part="confirm-btn">Confirm</button>
+        </div>
+    </div>
+</template>
+<script src="components/SettingsPopUp.js" type="module" async></script>
+<template id="reset-popup-template">
+    <style>
+        .button-footer {
+            background-color: rgb(234 234 234);
+            /* padding: 14px 20px; */
+            padding: 20px;
+            position: absolute;
+            text-align: right;
+            margin: 0;
+            right: 0;
+            left: 0;
+            border-radius: 0 0 10px 10px;
+        }
+        #close-icon {
+            /* width: 15px; */
+            width: 20px;
+            /* margin-top: 10px; */
+            /* margin-right: 10px; */
+            position:absolute;
+            top:20px;
+            right:20px;
+            cursor: pointer;
+            opacity: 0.33;
+            transition: transform .3s ease;
+        }
+        #close-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        #reset-content {
+            color: rgb(85, 85, 85);
+            font-weight: 500;
+            font-size: 18px;
+            /* margin: 20px auto 0 auto; */
+            margin: 0;
+            margin-bottom: 20px;
+            height: fit-content;
+        }
+        #reset-confirm-popup {
+            display: none;
+            box-sizing: border-box;
+            position: fixed;
+            /* width: 30%; */
+            /* height: 30%; */
+            /* border-radius: 4px; */
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 999;
+            background-color: whitesmoke;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            -webkit-animation-name: animatetop; 
+            -webkit-animation-duration: 0.3s;
+            animation-name: animatetop;
+            animation-duration: 0.3s;
+            width: 90%;
+            max-width: 600px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @-webkit-keyframes animatetop {
+            from {top:-200px; opacity:0} 
+            to {top:70; opacity:1}
+        }
+        @keyframes animatetop {
+            from {top:-200px; opacity:0}
+            to {top:70; opacity:1}
+        }
+        #reset-confirm-popup > h3{
+            font-size: 30px;
+            color: #f36060;
+            border-bottom: solid 1px #d2d2d2;
+            /* padding-bottom: 5px; */
+            padding-bottom: 10px;
+            width: 100%;
+            font-weight: 500;
+            /* margin: 20px auto 10px auto; */
+            margin: 0;
+            margin-bottom: 10px;
+        }
+        .reset-popup-btns {
+            cursor: pointer;
+            border-style: none;
+            /* border-radius: 4px; */
+            border-radius: 0.3125vw;
+            text-align: center;
+            background-color:#f36060;
+            color:#fff;
+            font-family: 'Quicksand', sans-serif;
+            /* font-size: 1em; */
+            font-size: 4.25vw;
+            font-weight: 500;
+            outline: none;
+            transition: transform .3s ease;
+        }
+        .reset-popup-btns:hover {
+            filter: brightness(105%);
+            transform: scale(1.1);
+        }
+        #confirm-reset-btn {
+            /* padding: 8px 12px; */
+            padding: 10px 40px;
+            border-radius: 10px;
+            font-size: 20px;
+        }
+
+        @media(min-width:900px) {
+            #reset-confirm-h3 {
+                font-size: 40px;
+            }
+            #reset-content{
+                font-size: 20px;
+            }
+        }
+        /* #cancel-reset-btn {
+            position: absolute;
+            float:right;
+            right: 5em;
+            bottom: 2em;
+        } */
+    </style>
+    <div id="reset-confirm-popup" part="popup-wrapper">
+        <img src="assets/icons-68c6c82c.svg#close" alt="" id="close-icon" part="close-icon">
+        <h3 part="reset-confirm-h3">Are you sure?</h3>
+        <h5 id="reset-content" part="reset-content">This will reset your current pomodoro session and wipe out your jotted tasks!</h5>
+        <div class="button-footer" part="btn-footer">
+            <button class="reset-popup-btns" id="confirm-reset-btn" part="confirm-btn">Confirm</button>
+        </div>
+    </div>
+</template>
+<script src="components/ResetPopUp.js" type="module" async></script>
+<template id="task-item-template">
+    <style>
+        :host {
+            cursor: pointer;
+            /* height: 50px; */
+            position: relative;
+            /* margin-bottom: 10px; */
+            /* border-radius: 5px; */
+            border-radius: 10px;
+            /* margin-right: 20%; */
+            box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%);
+            align-items: center;
+            padding-left: 10px;
+            /* padding-left: 37px; */
+            background-color: #f36060;
+            color: white;
+            /* font-size: medium; */
+            font-size: 1.35vw;
+            font-weight: 500;
+            border-style: none;
+            user-select: none;
+            margin: 0 auto;
+            /* margin-bottom: 10px; */
+            margin-bottom: 10px;
+        }
+        :host(:hover) {
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+        :host(:hover) .delete-icon, :host(:hover) .focus-icon {
+            visibility: visible;
+        }
+        :host(:hover[checked = "true"]) .focus-icon {
+            visibility: hidden;
+        }
+        :host([checked = 'true']) {
+            background: #f3606060;
+            text-decoration: line-through;
+            -webkit-text-decoration: line-through;
+        }
+        :host([checked = 'true']) .check-icon {
+            visibility: visible;
+        }
+
+        #li {
+            width:100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 50px 1fr 50px 50px;
+        }
+
+        #task-text {
+            align-self: center;
+        }
+        .check-icon {
+            /* left: 10px; */
+            align-self: center;
+            /* width: 20px; */
+            /* height: 20px; */
+            width: 30px;
+            height: 30px;
+            margin: 0;
+            visibility: hidden;
+        }
+
+        .delete-icon {
+            color: #fff;
+            /* right: 10px; */
+            align-self: center;
+            /* width: 20px; */
+            /* height: 20px; */
+            width: 30px;
+            height: 30px;
+            margin: 0;
+            grid-column:4;
+            visibility: hidden;
+            transition: transform .3s ease;
+        }
+        .delete-icon:hover {
+            transform: scale(1.3);
+            filter:brightness(105%)
+        }
+        .focus-icon {
+            color: #fff;
+            /* right: 40px; */
+            align-self:center;
+            /* width: 20px; */
+            /* height: 20px; */
+            width: 30px;
+            height: 30px;
+            margin: 0;
+            visibility: hidden;
+            transition: transform .3s ease;
+        }
+        .focus-icon:hover {
+            transform: scale(1.3);
+            filter:brightness(105%)
+        }
+    </style>
+    <li id="li">
+        <img src="assets/icons-68c6c82c.svg#check" alt="" part="test" class="check-icon">
+        <span id="task-text"></span>
+        <img src="assets/icons-68c6c82c.svg#focus" alt="" title="Focus on this task" class="focus-icon">
+        <img src="assets/icons-68c6c82c.svg#delete" alt="" title="Delete this task" class="delete-icon">
+    </li>
+</template>
+<script src="components/TaskItem.js" type="module" async></script>
+<template id="task-popup-template">
+    <style>
+        .button-footer {
+            background-color: rgb(234 234 234);
+            /* padding: 14px 20px; */
+            position:absolute;
+            padding: 20px;
+            text-align: right;
+            left: 0;
+            right: 0;
+            border-radius: 0 0 15px 15px;
+            /* border-bottom-left-radius: 4px; */
+            /* border-bottom-right-radius: 4px; */
+        }
+        #close-icon {
+            /* width: 15px; */
+            width: 20px;
+            /* margin-top: 10px; */
+            /* margin-right: 10px; */
+            position:absolute;
+            top:20px;
+            right:20px;
+            cursor: pointer;
+            opacity: 0.33;
+        }
+        #close-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        #add-task-popup {
+            box-sizing: border-box;
+            display: none;
+            position: fixed;
+            /* width: 30%; */
+            width: 90%;
+            /* height: 30%; */
+            max-width:600px;
+            /* border-radius: 4px; */
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 999;
+            background-color: whitesmoke;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            -webkit-animation-name: animatetop; 
+            -webkit-animation-duration: 0.3s;
+            animation-name: animatetop;
+            animation-duration: 0.3s;
+            width: 90%;
+            max-width: 600px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @-webkit-keyframes animatetop {
+            from {top:-200px; opacity:0} 
+            to {top:70; opacity:1}
+        }
+        @keyframes animatetop {
+            from {top:-200px; opacity:0}
+            to {top:70; opacity:1}
+        }
+        #task-input {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            width: 85%;
+            height: 80px;
+            background-color: whitesmoke;
+            color: rgb(85, 85, 85); 
+            border-style: hidden;
+            /* border-radius: 5px; */
+            outline: none;
+            display: block;
+            /* margin: 20px auto 0 auto; */
+            margin-top: 0;
+            font-weight: 500;
+        }
+        input[type='text']::placeholder {
+            /* color: rgba(85, 85, 85, 0.2); */
+            /* color: #A7A7A7; */
+            color: #c7c7c75e;
+        }
+
+
+        #add-task-popup > h3{
+            font-size: 30px;
+            font-weight: 500;
+            color: #f36060;
+            border-bottom: solid 1px #d2d2d2;
+            /* padding-bottom: 5px; */
+            padding-bottom: 10px;
+            width:100%;
+            margin: 0;
+            /* margin: 20px auto 10px auto; */
+        }
+        .popup-btns {
+            cursor: pointer;
+            border-style: none;
+            /* border-radius: 4px; */
+            border-radius: 10px;
+            text-align: center;
+            background-color:#f36060;
+            color:#fff;
+            font-family: 'Quicksand', sans-serif;
+            /* font-size: 1em; */
+            font-size: 20px;
+            font-weight: 500;
+            outline: none;
+        }
+        .popup-btns:hover {
+            filter: brightness(105%);
+            transform: scale(1.1);
+        }
+        #add-task-btn {
+            /* padding: 8px 12px; */
+            padding: 10px 40px;
+        }
+        #cancel-task-btn {
+            position: absolute;
+            float:right;
+            right: 5em;
+            bottom: 2em;
+        }
+
+        @media(min-width:900px) {
+            #add-task-popup>h3 {
+                font-size: 40px;
+            }
+
+            #task-input{
+                font-size: 22px;
+            }
+
+        }
+    </style>
+    <div id="add-task-popup" part="popup-wrapper">
+        <img src="assets/icons-68c6c82c.svg#close" alt="" id="close-icon" part="close-icon">
+        <h3 part="add-task-h3">Add Task</h3>
+        <input type="text" name="" id="task-input" placeholder="What are you working on today?" maxlength="48" spellcheck="false" part="task-input">
+        <div class="button-footer" part="btn-footer">
+            <button id="add-task-btn" class="popup-btns" part="add-btn">Add</button>
+        </div>
+    </div>
+</template>
+<script src="components/TaskPopUp.js" type="module" async></script>
     <div id="container">
         <header>
             <h1 id="header-name">Pomodoro Timer</h1>
-            <div id="header-buttons">
+            <nav id="header-buttons">
                 <ul>
-                    <li>
-                        <button class='top-buttons' id='focus-button'>
-                            <img src="icons/half-moon.svg" id="focus" class="top-button-img" alt="focus">
+                    <li title="Focus">
+                        <button id="focus-button">
+                            <img src="assets/icons-68c6c82c.svg#half-moon" id="focus" class="top-button-img" alt="Focus">
                         </button>
                     </li>
-                    <li>
+                    <li title="Reset">
                         <button class="top-buttons" id="reset-button">
-                            <img src="icons/reset.svg" id="reset" class="top-button-img" alt="reset">
+                            <img src="assets/icons-68c6c82c.svg#reset" id="reset" class="top-button-img" alt="Reset">
                         </button>
                     </li>
-                    <li><button class="top-buttons" id="setting-button">
-                            <img src="icons/settings.svg" id="gear" class="top-button-img" alt="gear">
+                    <li title="Settings">
+                        <button class="top-buttons" id="setting-button">
+                            <img src="assets/icons-68c6c82c.svg#settings" id="gear" class="top-button-img" alt="Settings">
                         </button>
                     </li>
-                    <li><button class="top-buttons" id="help-button">
-                            <img src="icons/help.svg" id="help" class="top-button-img" alt="help">
+                    <li title="Help">
+                        <button class="top-buttons" id="help-button">
+                            <img src="assets/icons-68c6c82c.svg#help" id="help" class="top-button-img" alt="Help">
                         </button>
                     </li>
                 </ul>
-            </div>
+            </nav>
         </header>
-        <div id="pomodoro-timer">
-            <div id="timer-btns" class="timer-buttons">
-                <button id="pomo-btn"> Pomo</button>
-                <button id="break-btn"> Break</button>
-            </div>
-            <div class="empty-space-border">
-            </div>
-            <div id="timer_display" class="timer-value">
-                <div id="timer_display_duration">25:00</div>
-            </div>
-            <div id="timer-control-btns" class="timer-control-buttons">
-                <button id="start-btn">Start</button>
-            </div>
-            <div id='focus-task'>
-                <h2 id='select-focus'></h2>
-            </div>
-        </div>
-        <div id="task-list">
-            <h2 id="up-next">Up Next</h2>
-            <ul id="task-list-elements">
-            </ul>
-            <button id="task-popup-btn"> <img src="icons/plus.svg" id="plus"></button>
-        </div>
+        <main>
+            <section id="pomodoro-timer">
+                <div id="timer-btns" class="timer-buttons">
+                    <h2 id="pomo-btn"> Pomo</h2>
+                    <h2 id="break-btn"> Break</h2>
+                </div>
+                <div id="timer-display" class="timer-value">
+                    <div id="timer-display-duration">25:00</div>
+                </div>
+                <div id="timer-control-btns" class="timer-control-buttons">
+                    <button id="start-btn">Start</button>
+                </div>
+                <div id="focus-task">
+                    <h2 id="select-focus"></h2>
+                </div>
+            </section>
+            <section id="task-list">
+                <menu>
+                    <button id="up-next" data-selected="true">Up Next</button>
+                    <button id="completed" data-selected="false">Completed</button>
+                </menu>
+                <ul id="task-list-elements">
+                </ul>
+                <button id="task-popup-btn" title="Add Task">
+                    <img src="assets/icons-68c6c82c.svg#plus" id="plus">
+                </button>
+            </section>
+        </main>
         <!-- <footer>
             <span id='help-info'>Click on 'Help' or press 'h' for more info </span>
         </footer> -->
     </div>
-    <script>
-        // Render blocking JS:
-        if (localStorage.getItem("theme") === 'dark') {
-            document.body.classList.add("dark-theme");
-        }
-        if (localStorage.getItem("state") === 'focus') {
-            document.getElementById('task-list').classList.add('state');
-            document.getElementById('pomodoro-timer').classList.add('state');
-            document.getElementById('focus-task').classList.add('state');
-        }
-    </script>
-    <script src="instrumented/scripts/script.js"></script>
-    <script src="instrumented/scripts/Timer.js"></script>
-    <script src="instrumented/scripts/FocusMode.js"></script>
-    <script src="instrumented/components/TaskItem.js"></script>
-    <script src="instrumented/components/TaskPopUp.js"></script>
-    <script src="instrumented/components/ResetPopUp.js"></script>
-    <script src="instrumented/components/SettingsPopUp.js"></script>
-    <script src="instrumented/components/HelpPopUp.js"></script>
+
+    <settings-popup class="popup"></settings-popup>
+    <help-popup class="popup"></help-popup>
+    <reset-popup class="popup"></reset-popup>
+    <task-popup class="popup"></task-popup>
 </body>
 
 </html>
